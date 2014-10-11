@@ -1,7 +1,7 @@
 /*
-   This file was taken from alsa-utils aplay.c and stripped down, see README
-   for more details. This file is GPL, see the license information in
-   alsa-utils for more info.
+  This file was taken from alsa-utils aplay.c and stripped down, see README
+  for more details. This file is GPL, see the license information in
+  alsa-utils for more info.
 */
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -59,7 +59,7 @@
 /* it's in chunks like .voc and AMIGA iff, but my source say there
    are in only in this combination, so I combined them in one header;
    it works on all WAVE-file I have
- */
+*/
 typedef struct {
 	u_int magic;		/* 'RIFF' */
 	u_int length;		/* filelen */
@@ -136,7 +136,6 @@ static int start_delay = 0;
 static int stop_delay = 0;
 static int verbose = 0;
 static int vumeter = VUMETER_NONE;
-static int buffer_pos = 0;
 static size_t bits_per_sample, bits_per_frame;
 static size_t chunk_bytes;
 static snd_output_t *log;
@@ -165,17 +164,17 @@ struct fmt_capture {
 };
 
 #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95)
-#define error(...) do {\
-	fprintf(stderr, "%s: %s:%d: ", command, __FUNCTION__, __LINE__); \
-	fprintf(stderr, __VA_ARGS__); \
-	putc('\n', stderr); \
-} while (0)
+#define error(...) do {							\
+		fprintf(stderr, "%s: %s:%d: ", command, __FUNCTION__, __LINE__); \
+		fprintf(stderr, __VA_ARGS__);				\
+		putc('\n', stderr);					\
+	} while (0)
 #else
-#define error(args...) do {\
-	fprintf(stderr, "%s: %s:%d: ", command, __FUNCTION__, __LINE__); \
-	fprintf(stderr, ##args); \
-	putc('\n', stderr); \
-} while (0)
+#define error(args...) do {						\
+		fprintf(stderr, "%s: %s:%d: ", command, __FUNCTION__, __LINE__); \
+		fprintf(stderr, ##args);				\
+		putc('\n', stderr);					\
+	} while (0)
 #endif
 
 static void version(void)
@@ -219,18 +218,18 @@ enum {
 
 int main()
 {
-    run("b.wav");
-    return 0;
+	run("b.wav");
+	return 0;
 }
 
 void stop()
 {
-    capture_stop = 1;
+	capture_stop = 1;
 }
 
 int run(char *filename)
 {
-    capture_stop = 0;
+	capture_stop = 0;
 	char *pcm_name = "default";
 	int tmp, err;
 	snd_pcm_info_t *info;
@@ -241,23 +240,23 @@ int run(char *filename)
 	assert(err >= 0);
 
 	file_type = FORMAT_DEFAULT;
-    stream = SND_PCM_STREAM_CAPTURE;
-    file_type = FORMAT_WAVE;
-    command = "arecord";
-    start_delay = 1;
+	stream = SND_PCM_STREAM_CAPTURE;
+	file_type = FORMAT_WAVE;
+	command = "arecord";
+	start_delay = 1;
 
 	chunk_size = -1;
 	rhwparams.format = DEFAULT_FORMAT;
 	rhwparams.rate = DEFAULT_SPEED;
 	rhwparams.channels = 1;
 
-    file_type = FORMAT_WAVE;
+	file_type = FORMAT_WAVE;
 
-    // cdr:
-    // rhwparams.format = SND_PCM_FORMAT_S16_BE;
-    rhwparams.format = file_type == FORMAT_AU ? SND_PCM_FORMAT_S16_BE : SND_PCM_FORMAT_S16_LE;
-    rhwparams.rate = 44100;
-    rhwparams.channels = 2;
+	// cdr:
+	// rhwparams.format = SND_PCM_FORMAT_S16_BE;
+	rhwparams.format = file_type == FORMAT_AU ? SND_PCM_FORMAT_S16_BE : SND_PCM_FORMAT_S16_LE;
+	rhwparams.rate = 44100;
+	rhwparams.channels = 2;
 
 	err = snd_pcm_open(&handle, pcm_name, stream, open_mode);
 	if (err < 0) {
@@ -287,21 +286,21 @@ int run(char *filename)
 		return 1;
 	}
 
-    writei_func = snd_pcm_writei;
+	writei_func = snd_pcm_writei;
 	readi_func = snd_pcm_readi;
 	writen_func = snd_pcm_writen;
 	readn_func = snd_pcm_readn;
 
 
-	//signal(SIGINT, signal_handler);
-	//signal(SIGTERM, signal_handler);
-	//signal(SIGABRT, signal_handler);
-    capture(filename);
+	signal(SIGINT, signal_handler);
+	signal(SIGTERM, signal_handler);
+	signal(SIGABRT, signal_handler);
+	capture(filename);
 
-    if (fmt_rec_table[file_type].end) {
-        fmt_rec_table[file_type].end(fd);
-        fd = -1;
-    }
+	if (fmt_rec_table[file_type].end) {
+		fmt_rec_table[file_type].end(fd);
+		fd = -1;
+	}
 	stream = -1;
 	if (fd > 1) {
 		close(fd);
@@ -473,15 +472,15 @@ static void set_params(void)
 }
 
 #ifndef timersub
-#define	timersub(a, b, result) \
-do { \
-	(result)->tv_sec = (a)->tv_sec - (b)->tv_sec; \
-	(result)->tv_usec = (a)->tv_usec - (b)->tv_usec; \
-	if ((result)->tv_usec < 0) { \
-		--(result)->tv_sec; \
-		(result)->tv_usec += 1000000; \
-	} \
-} while (0)
+#define	timersub(a, b, result)						\
+	do {								\
+		(result)->tv_sec = (a)->tv_sec - (b)->tv_sec;		\
+		(result)->tv_usec = (a)->tv_usec - (b)->tv_usec;	\
+		if ((result)->tv_usec < 0) {				\
+			--(result)->tv_sec;				\
+			(result)->tv_usec += 1000000;			\
+		}							\
+	} while (0)
 #endif
 
 /* I/O error handler */
@@ -903,8 +902,8 @@ static void end_wave(int fd)
 	u_int rifflen;
 
 	length_seek = sizeof(WaveHeader) +
-		      sizeof(WaveChunkHeader) +
-		      sizeof(WaveFmtBody);
+		sizeof(WaveChunkHeader) +
+		sizeof(WaveFmtBody);
 	cd.type = WAV_DATA;
 	cd.length = fdcount > 0x7fffffff ? LE_INT(0x7fffffff) : LE_INT(fdcount);
 	filelen = fdcount + 2*sizeof(WaveChunkHeader) + sizeof(WaveFmtBody) + 4;
@@ -974,7 +973,7 @@ static void capture(char *orig_name)
 	else
 		count -= count % 2;
 
-    printf("arecord: Recording audio to: %s\n", name);
+	printf("arecord: Recording audio to: %s\n", name);
 	/* setup sound hardware */
 	set_params();
 
@@ -1042,6 +1041,6 @@ static void capture(char *orig_name)
 		 * requested counts of data are recorded
 		 */
 	} while ( ((file_type == FORMAT_RAW && !timelimit) || count > 0) &&
-        capture_stop == 0);
-    printf("arecord: Stopping capturing audio.\n");
+		  capture_stop == 0);
+	printf("arecord: Stopping capturing audio.\n");
 }
