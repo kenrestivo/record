@@ -88,10 +88,10 @@ typedef struct {
 #define LLONG_MAX    9223372036854775807LL
 #endif
 
-#define DEFAULT_FORMAT		SND_PCM_FORMAT_U8
-#define DEFAULT_SPEED 		8000
+#define DEFAULT_FORMAT		SND_PCM_FORMAT_S16_LE 
+#define DEFAULT_SPEED 		44100
 
-#define FORMAT_DEFAULT		-1
+#define FORMAT_DEFAULT		2
 #define FORMAT_RAW		0
 #define FORMAT_VOC		1
 #define FORMAT_WAVE		2
@@ -216,9 +216,9 @@ enum {
 	OPT_TEST_POSITION
 };
 
-int main()
+int main(int argc, char *argv[] )
 {
-	run("b.wav");
+	run(argv[1]);
 	return 0;
 }
 
@@ -291,7 +291,7 @@ int run(char *filename)
 	writen_func = snd_pcm_writen;
 	readn_func = snd_pcm_readn;
 
-
+	// TODO: SIGPIPE?? for composing with opusenc?
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
 	signal(SIGABRT, signal_handler);
