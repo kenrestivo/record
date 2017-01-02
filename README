@@ -8,7 +8,7 @@ set to 1, the main audio capture loop will end. Then it is called from cython
 using nogil in it's own thread and when the user wants to end it, the
 "capture_stop" is set to 1. 
 
-It was then stripped down even more extremely for use as an embedded streamer.
+It was then stripped down even more extremely for use as an embedded peak/signal meter.
 
 Usage
 -----
