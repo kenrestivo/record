@@ -509,15 +509,6 @@ static void suspend(void)
 		fprintf(stderr, _("Done.\n"));
 }
 
-static void print_clips(int *perc, int *maxperc)
-{
-	printf("L: %s %s  R: %s %s",
-	       (perc[0] > MIN_PERC) ? "SIG" : "   ",
-	       (maxperc[0] > MAX_PERC) ? "CLIP!" : "     ",
-	       (perc[1] > MIN_PERC) ? "SIG" : "   ",
-	       (maxperc[1] > MAX_PERC) ? "CLIP!" : "     ");
-}
-
 
 static void print_very_basic_info(int *perc, int *maxperc)
 {
@@ -526,45 +517,6 @@ static void print_very_basic_info(int *perc, int *maxperc)
 	       perc[1], maxperc[1]);
 }
 
-
-
-static void print_vu_meter_stereo(int *perc, int *maxperc)
-{
-       const int bar_length = BAR_LENGTH;
-	char line[80];
-	int c;
-
-	memset(line, ' ', sizeof(line) - 1);
-	line[bar_length + 3] = '|';
-
-	for (c = 0; c < 2; c++) {
-		int p = perc[c] * bar_length / 100;
-		char tmp[4];
-		if (p > bar_length)
-			p = bar_length;
-		if (c)
-			memset(line + bar_length + 6 + 1, '#', p);
-		else
-			memset(line + bar_length - p - 1, '#', p);
-		p = maxperc[c] * bar_length / 100;
-		if (p > bar_length)
-			p = bar_length;
-		if (c)
-			line[bar_length + 6 + 1 + p] = '+';
-		else
-			line[bar_length - p - 1] = '+';
-		if (maxperc[c] > MAX_PERC)
-			sprintf(tmp, "MAX");
-		else
-			sprintf(tmp, "%02d%%", maxperc[c]);
-		if (c)
-			memcpy(line + bar_length + 3 + 1, tmp, 3);
-		else
-			memcpy(line + bar_length, tmp, 3);
-	}
-	line[bar_length * 2 + 6 + 2] = 0;
-	fputs(line, stdout);
-}
 
 
 /* peak handler */
