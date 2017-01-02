@@ -147,7 +147,7 @@ static off64_t pbrec_count = LLONG_MAX, fdcount;
 
 static int run(char *filename);
 
-static void capture(char *filename);
+static void capture();
 
 static void begin_wave(int fd, size_t count);
 static void end_wave(int fd);
@@ -293,7 +293,7 @@ int run(char *filename)
 	signal(SIGINT, signal_handler);
 	signal(SIGTERM, signal_handler);
 	signal(SIGABRT, signal_handler);
-	capture(filename);
+	capture();
 
 	if (fmt_rec_table[file_type].end) {
 		fmt_rec_table[file_type].end(fd);
@@ -909,50 +909,9 @@ static void end_wave(int fd)
 		close(fd);
 }
 
-static int new_capture_file(char *name, char *namebuf, size_t namelen,
-			    int filecount)
+
+static void capture()
 {
-	/* get a copy of the original filename */
-	char *s;
-	char buf[PATH_MAX+1];
-
-	strncpy(buf, name, sizeof(buf));
-
-	/* separate extension from filename */
-	s = buf + strlen(buf);
-	while (s > buf && *s != '.' && *s != '/')
-		--s;
-	if (*s == '.')
-		*s++ = 0;
-	else if (*s == '/')
-		s = buf + strlen(buf);
-
-	/* upon first jump to this if block rename the first file */
-	if (filecount == 1) {
-		if (*s)
-			snprintf(namebuf, namelen, "%s-01.%s", buf, s);
-		else
-			snprintf(namebuf, namelen, "%s-01", buf);
-		remove(namebuf);
-		rename(name, namebuf);
-		filecount = 2;
-	}
-
-	/* name of the current file */
-	if (*s)
-		snprintf(namebuf, namelen, "%s-%02i.%s", buf, filecount, s);
-	else
-		snprintf(namebuf, namelen, "%s-%02i", buf, filecount);
-
-	return filecount;
-}
-
-static void capture(char *orig_name)
-{
-	int tostdout=0;		/* boolean which describes output stream */
-	int filecount=0;	/* number of files written */
-	char *name = orig_name;	/* current filename */
-	char namebuf[PATH_MAX+1];
 	off64_t count, rest;		/* number of bytes to capture */
 
 	/* get number of bytes to capture */
@@ -966,39 +925,11 @@ static void capture(char *orig_name)
 	else
 		count -= count % 2;
 
-	printf("arecord: Recording audio to: %s\n", name);
+	printf("arecord: Recording audio\n");
 	/* setup sound hardware */
 	set_params();
 
-	/* write to stdout? */
-	if (!name || !strcmp(name, "-")) {
-		fd = fileno(stdout);
-		name = "stdout";
-		tostdout=1;
-		if (count > fmt_rec_table[file_type].max_filesize)
-			count = fmt_rec_table[file_type].max_filesize;
-	}
-
 	do {
-		/* open a file to write */
-		if(!tostdout) {
-			/* upon the second file we start the numbering scheme */
-			if (filecount) {
-				filecount = new_capture_file(orig_name, namebuf,
-							     sizeof(namebuf),
-							     filecount);
-				name = namebuf;
-			}
-
-			/* open a new file */
-			remove(name);
-			if ((fd = open64(name, O_WRONLY | O_CREAT, 0644)) == -1) {
-				perror(name);
-				exit(EXIT_FAILURE);
-			}
-			filecount++;
-		}
-
 		rest = count;
 		if (rest > fmt_rec_table[file_type].max_filesize)
 			rest = fmt_rec_table[file_type].max_filesize;
@@ -1015,25 +946,14 @@ static void capture(char *orig_name)
 			size_t f = c * 8 / bits_per_frame;
 			if (pcm_read(audiobuf, f) != f)
 				break;
-			if (write(fd, audiobuf, c) != c) {
-				perror(name);
-				exit(EXIT_FAILURE);
-			}
 			count -= c;
 			rest -= c;
 			fdcount += c;
 		}
 
-		/* finish sample container */
-		if (fmt_rec_table[file_type].end && !tostdout) {
-			fmt_rec_table[file_type].end(fd);
-			fd = -1;
-		}
-
 		/* repeat the loop when format is raw without timelimit or
 		 * requested counts of data are recorded
 		 */
-	} while ( ((file_type == FORMAT_RAW && !timelimit) || count > 0) &&
-		  capture_stop == 0);
+	} while ( capture_stop == 0);
 	printf("arecord: Stopping capturing audio.\n");
 }
