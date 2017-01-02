@@ -225,10 +225,9 @@ void stop()
 	capture_stop = 1;
 }
 
-int run(char *filename)
+int run(char *pcm_name)
 {
 	capture_stop = 0;
-	char *pcm_name = "default";
 	int  err;
 	snd_pcm_info_t *info;
 
