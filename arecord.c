@@ -71,6 +71,7 @@
 
 #define BAR_LENGTH             35
 #define MAX_PERC               97
+#define MIN_PERC               5
 
 /* global data */
 
@@ -508,6 +509,23 @@ static void suspend(void)
 		fprintf(stderr, _("Done.\n"));
 }
 
+static void print_clips(int *perc, int *maxperc)
+{
+	printf("L: %s %s  R: %s %s",
+	       (perc[0] > MIN_PERC) ? "SIG" : "   ",
+	       (maxperc[0] > MAX_PERC) ? "CLIP!" : "     ",
+	       (perc[1] > MIN_PERC) ? "SIG" : "   ",
+	       (maxperc[1] > MAX_PERC) ? "CLIP!" : "     ");
+}
+
+
+static void print_very_basic_info(int *perc, int *maxperc)
+{
+	printf("%02d %02d %02d %02d",
+	       perc[0], maxperc[0],
+	       perc[1], maxperc[1]);
+}
+
 
 
 static void print_vu_meter_stereo(int *perc, int *maxperc)
@@ -678,7 +696,7 @@ static void compute_max_peak(u_char *data, size_t count)
 
 		putchar('\n');
 		/// TODO: this is it buried in here
-		print_vu_meter_stereo(perc, maxperc);
+		print_very_basic_info(perc, maxperc);
 		fflush(stdout);
 	}
 	else if(verbose==3) {
