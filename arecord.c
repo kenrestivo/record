@@ -68,6 +68,10 @@
 #define FORMAT_WAVE		2
 #define FORMAT_AU		3
 
+
+#define BAR_LENGTH             35
+#define MAX_PERC               97
+
 /* global data */
 
 static snd_pcm_sframes_t (*readi_func)(snd_pcm_t *handle, void *buffer, snd_pcm_uframes_t size);
@@ -150,10 +154,10 @@ struct fmt_capture {
 
 static void signal_handler(int sig)
 {
-	if (verbose==2)
-		putchar('\n');
+  
+        putchar('\n');
 	if (!quiet_mode)
-		fprintf(stderr, _("Aborted by signal %s...\n"), strsignal(sig));
+		fprintf(stderr, _("\n\nAborted by signal %s...\n"), strsignal(sig));
 	if (fd > 1) {
 		close(fd);
 		fd = -1;
@@ -508,7 +512,7 @@ static void suspend(void)
 
 static void print_vu_meter_stereo(int *perc, int *maxperc)
 {
-	const int bar_length = 35;
+       const int bar_length = BAR_LENGTH;
 	char line[80];
 	int c;
 
@@ -531,7 +535,7 @@ static void print_vu_meter_stereo(int *perc, int *maxperc)
 			line[bar_length + 6 + 1 + p] = '+';
 		else
 			line[bar_length - p - 1] = '+';
-		if (maxperc[c] > 99)
+		if (maxperc[c] > MAX_PERC)
 			sprintf(tmp, "MAX");
 		else
 			sprintf(tmp, "%02d%%", maxperc[c]);
