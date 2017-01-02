@@ -47,38 +47,6 @@
 #error "Wrong endian"
 #endif
 
-#define WAV_RIFF		COMPOSE_ID('R','I','F','F')
-#define WAV_WAVE		COMPOSE_ID('W','A','V','E')
-#define WAV_FMT			COMPOSE_ID('f','m','t',' ')
-#define WAV_DATA		COMPOSE_ID('d','a','t','a')
-
-/* WAVE fmt block constants from Microsoft mmreg.h header */
-#define WAV_FMT_PCM             0x0001
-#define WAV_FMT_IEEE_FLOAT      0x0003
-
-/* it's in chunks like .voc and AMIGA iff, but my source say there
-   are in only in this combination, so I combined them in one header;
-   it works on all WAVE-file I have
-*/
-typedef struct {
-	u_int magic;		/* 'RIFF' */
-	u_int length;		/* filelen */
-	u_int type;		/* 'WAVE' */
-} WaveHeader;
-
-typedef struct {
-	u_short format;		/* see WAV_FMT_* */
-	u_short channels;
-	u_int sample_fq;	/* frequence of sample */
-	u_int byte_p_sec;
-	u_short byte_p_spl;	/* samplesize; 1 or 2 bytes */
-	u_short bit_p_spl;	/* 8, 12 or 16 bit */
-} WaveFmtBody;
-
-typedef struct {
-	u_int type;		/* 'data' */
-	u_int length;		/* samplecount */
-} WaveChunkHeader;
 
 #define _(msgid) gettext (msgid)
 #define gettext_noop(msgid) msgid
@@ -149,8 +117,6 @@ static int run(char *filename);
 
 static void capture();
 
-static void begin_wave(int fd, size_t count);
-static void end_wave(int fd);
 
 struct fmt_capture {
 	void (*start) (int fd, size_t count);
@@ -160,7 +126,7 @@ struct fmt_capture {
 } fmt_rec_table[] = {
 	{	NULL,		NULL,		N_("raw data"),		LLONG_MAX },
 	{	NULL,	NULL,	N_("VOC"),		16000000LL },
-	{	begin_wave,	end_wave,	N_("WAVE"),		2147483648LL },
+	{	NULL,	NULL,	N_("WAVE"),		2147483648LL },
 	{	NULL,	NULL,		N_("Sparc Audio"),	LLONG_MAX }
 };
 
@@ -185,13 +151,6 @@ static void signal_handler(int sig)
 		putchar('\n');
 	if (!quiet_mode)
 		fprintf(stderr, _("Aborted by signal %s...\n"), strsignal(sig));
-	if (stream == SND_PCM_STREAM_CAPTURE) {
-		if (fmt_rec_table[file_type].end) {
-			fmt_rec_table[file_type].end(fd);
-			fd = -1;
-		}
-		stream = -1;
-	}
 	if (fd > 1) {
 		close(fd);
 		fd = -1;
@@ -294,10 +253,6 @@ int run(char *pcm_name)
 	signal(SIGABRT, signal_handler);
 	capture();
 
-	if (fmt_rec_table[file_type].end) {
-		fmt_rec_table[file_type].end(fd);
-		fd = -1;
-	}
 	stream = -1;
 	if (fd > 1) {
 		close(fd);
@@ -783,100 +738,6 @@ static off64_t calc_count(void)
 	return count < pbrec_count ? count : pbrec_count;
 }
 
-/* write a WAVE-header */
-static void begin_wave(int fd, size_t cnt)
-{
-	WaveHeader h;
-	WaveFmtBody f;
-	WaveChunkHeader cf, cd;
-	int bits;
-	u_int tmp;
-	u_short tmp2;
-
-	/* WAVE cannot handle greater than 32bit (signed?) int */
-	if (cnt == (size_t)-2)
-		cnt = 0x7fffff00;
-
-	bits = 8;
-	switch ((unsigned long) hwparams.format) {
-	case SND_PCM_FORMAT_U8:
-		bits = 8;
-		break;
-	case SND_PCM_FORMAT_S16_LE:
-		bits = 16;
-		break;
-	case SND_PCM_FORMAT_S32_LE:
-        case SND_PCM_FORMAT_FLOAT_LE:
-		bits = 32;
-		break;
-	case SND_PCM_FORMAT_S24_LE:
-	case SND_PCM_FORMAT_S24_3LE:
-		bits = 24;
-		break;
-	default:
-		error(_("Wave doesn't support %s format..."), snd_pcm_format_name(hwparams.format));
-		exit(EXIT_FAILURE);
-	}
-	h.magic = WAV_RIFF;
-	tmp = cnt + sizeof(WaveHeader) + sizeof(WaveChunkHeader) + sizeof(WaveFmtBody) + sizeof(WaveChunkHeader) - 8;
-	h.length = LE_INT(tmp);
-	h.type = WAV_WAVE;
-
-	cf.type = WAV_FMT;
-	cf.length = LE_INT(16);
-
-        if (hwparams.format == SND_PCM_FORMAT_FLOAT_LE)
-                f.format = LE_SHORT(WAV_FMT_IEEE_FLOAT);
-        else
-                f.format = LE_SHORT(WAV_FMT_PCM);
-	f.channels = LE_SHORT(hwparams.channels);
-	f.sample_fq = LE_INT(hwparams.rate);
-#if 0
-	tmp2 = (samplesize == 8) ? 1 : 2;
-	f.byte_p_spl = LE_SHORT(tmp2);
-	tmp = dsp_speed * hwparams.channels * (u_int) tmp2;
-#else
-	tmp2 = hwparams.channels * snd_pcm_format_physical_width(hwparams.format) / 8;
-	f.byte_p_spl = LE_SHORT(tmp2);
-	tmp = (u_int) tmp2 * hwparams.rate;
-#endif
-	f.byte_p_sec = LE_INT(tmp);
-	f.bit_p_spl = LE_SHORT(bits);
-
-	cd.type = WAV_DATA;
-	cd.length = LE_INT(cnt);
-
-	if (write(fd, &h, sizeof(WaveHeader)) != sizeof(WaveHeader) ||
-	    write(fd, &cf, sizeof(WaveChunkHeader)) != sizeof(WaveChunkHeader) ||
-	    write(fd, &f, sizeof(WaveFmtBody)) != sizeof(WaveFmtBody) ||
-	    write(fd, &cd, sizeof(WaveChunkHeader)) != sizeof(WaveChunkHeader)) {
-		error(_("write error"));
-		exit(EXIT_FAILURE);
-	}
-}
-
-static void end_wave(int fd)
-{				/* only close output */
-	WaveChunkHeader cd;
-	off64_t length_seek;
-	off64_t filelen;
-	u_int rifflen;
-
-	length_seek = sizeof(WaveHeader) +
-		sizeof(WaveChunkHeader) +
-		sizeof(WaveFmtBody);
-	cd.type = WAV_DATA;
-	cd.length = fdcount > 0x7fffffff ? LE_INT(0x7fffffff) : LE_INT(fdcount);
-	filelen = fdcount + 2*sizeof(WaveChunkHeader) + sizeof(WaveFmtBody) + 4;
-	rifflen = filelen > 0x7fffffff ? LE_INT(0x7fffffff) : LE_INT(filelen);
-	if (lseek64(fd, 4, SEEK_SET) == 4)
-		write(fd, &rifflen, 4);
-	if (lseek64(fd, length_seek, SEEK_SET) == length_seek)
-		write(fd, &cd, sizeof(WaveChunkHeader));
-	if (fd != 1)
-		close(fd);
-}
-
 
 static void capture()
 {
@@ -899,12 +760,7 @@ static void capture()
 
 	do {
 		rest = count;
-		if (rest > fmt_rec_table[file_type].max_filesize)
-			rest = fmt_rec_table[file_type].max_filesize;
 
-		/* setup sample header */
-		if (fmt_rec_table[file_type].start)
-			fmt_rec_table[file_type].start(fd, rest);
 
 		/* capture */
 		fdcount = 0;
