@@ -135,7 +135,7 @@ static int avail_min = -1;
 static int start_delay = 0;
 static int stop_delay = 0;
 static int verbose = 0;
-static int vumeter = VUMETER_NONE;
+static int vumeter = VUMETER_STEREO;
 static size_t bits_per_sample, bits_per_frame;
 static size_t chunk_bytes;
 static snd_output_t *log;
@@ -459,11 +459,6 @@ static void set_params(void)
 	}
 	// fprintf(stderr, "real chunk_size = %i, frags = %i, total = %i\n", chunk_size, setup.buf.block.frags, setup.buf.block.frags * chunk_size);
 
-	/* stereo VU-meter isn't always available... */
-	if (vumeter == VUMETER_STEREO) {
-		if (hwparams.channels != 2 || !interleaved || verbose > 2)
-			vumeter = VUMETER_MONO;
-	}
 
 	buffer_frames = buffer_size;	/* for position test */
 }
@@ -551,27 +546,7 @@ static void suspend(void)
 		fprintf(stderr, _("Done.\n"));
 }
 
-static void print_vu_meter_mono(int perc, int maxperc)
-{
-	const int bar_length = 50;
-	char line[80];
-	int val;
 
-	for (val = 0; val <= perc * bar_length / 100 && val < bar_length; val++)
-		line[val] = '#';
-	for (; val <= maxperc * bar_length / 100 && val < bar_length; val++)
-		line[val] = ' ';
-	line[val] = '+';
-	for (++val; val <= bar_length; val++)
-		line[val] = ' ';
-	if (maxperc > 99)
-		sprintf(line + val, "| MAX");
-	else
-		sprintf(line + val, "| %02i%%", maxperc);
-	fputs(line, stdout);
-	if (perc > 100)
-		printf(_(" !clip  "));
-}
 
 static void print_vu_meter_stereo(int *perc, int *maxperc)
 {
@@ -611,13 +586,6 @@ static void print_vu_meter_stereo(int *perc, int *maxperc)
 	fputs(line, stdout);
 }
 
-static void print_vu_meter(signed int *perc, signed int *maxperc)
-{
-	if (vumeter == VUMETER_STEREO)
-		print_vu_meter_stereo(perc, maxperc);
-	else
-		print_vu_meter_mono(*perc, *maxperc);
-}
 
 /* peak handler */
 static void compute_max_peak(u_char *data, size_t count)
@@ -746,8 +714,9 @@ static void compute_max_peak(u_char *data, size_t count)
 			if (perc[c] > maxperc[c])
 				maxperc[c] = perc[c];
 
-		putchar('\r');
-		print_vu_meter(perc, maxperc);
+		putchar('\n');
+		/// TODO: this is it buried in here
+		print_vu_meter_stereo(perc, maxperc);
 		fflush(stdout);
 	}
 	else if(verbose==3) {
