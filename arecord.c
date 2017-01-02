@@ -2,6 +2,9 @@
   This file was taken from alsa-utils aplay.c and stripped down, see README
   for more details. This file is GPL, see the license information in
   alsa-utils for more info.
+
+  And then hacked to within an inch of its life to only show stereo meter with cd audio
+
 */
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -59,7 +62,7 @@
 #define DEFAULT_FORMAT		SND_PCM_FORMAT_S16_LE 
 #define DEFAULT_SPEED 		44100
 
-#define FORMAT_DEFAULT		2
+#define FORMAT_DEFAULT		0
 #define FORMAT_RAW		0
 #define FORMAT_VOC		1
 #define FORMAT_WAVE		2
