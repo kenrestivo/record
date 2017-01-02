@@ -145,6 +145,8 @@ static off64_t pbrec_count = LLONG_MAX, fdcount;
 
 /* needed prototypes */
 
+static int run(char *filename);
+
 static void capture(char *filename);
 
 static void begin_wave(int fd, size_t count);
