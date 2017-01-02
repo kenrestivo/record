@@ -142,7 +142,6 @@ static snd_output_t *log;
 
 static int fd = -1;
 static off64_t pbrec_count = LLONG_MAX, fdcount;
-static int vocmajor, vocminor;
 
 /* needed prototypes */
 
@@ -177,9 +176,6 @@ struct fmt_capture {
 	} while (0)
 #endif
 
-static void version(void)
-{
-}
 
 static void signal_handler(int sig)
 {
@@ -231,7 +227,7 @@ int run(char *filename)
 {
 	capture_stop = 0;
 	char *pcm_name = "default";
-	int tmp, err;
+	int  err;
 	snd_pcm_info_t *info;
 
 	snd_pcm_info_alloca(&info);
@@ -802,11 +798,6 @@ static ssize_t pcm_read(u_char *data, size_t rcount)
 	return rcount;
 }
 
-/* setting the globals for playing raw data */
-static void init_raw_data(void)
-{
-	hwparams = rhwparams;
-}
 
 /* calculate the data count to read from/to dsp */
 static off64_t calc_count(void)
